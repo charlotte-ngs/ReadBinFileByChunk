@@ -1,0 +1,18 @@
+---
+title: "Reading A Binary File By Chunks"
+author: "Peter von Rohr"
+date: "29 September 2016"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Background
+
+In an earlier [posts](http://charlotte-ngs.github.io/rgrm/rgrmhelperfunctions.html) I showed some functions to work with symmetric matrices that are read from binary files using R's `readBin()` function. The use case presented in the earlier post was a genetic relationship matrix. The approach chosen at that time was to first read all lower triangular elemnts including the diagonal of the matrix into a vector. Based on some characteristics of symmetric matrices, we were able to trace back elements from the vector into the original matrix.
+
+
+## Scalability
+
