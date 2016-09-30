@@ -75,3 +75,12 @@ In the above simple example chunks of the data are processed sequentially. That 
 In the small example shown above the data chunks are read from a binary input files. But, the same approach can be applied to data that are stored in simple text file. The only thing that needs to be done is to replace the `readBin()` function by the `readLines()` function.
 
 
+## Session Info
+```{r}
+sessionInfo()
+```
+
+
+## Latest Change
+_`r paste(Sys.time(),paste0("(", Sys.info()[["user"]],")" ))`_
+
