@@ -15,4 +15,63 @@ In an earlier [posts](http://charlotte-ngs.github.io/rgrm/rgrmhelperfunctions.ht
 
 
 ## Scalability
+While the original solution worked fine, the scalability is rather poor. Good scalability means that the proposed solution works correctly even if the number of animals grows. The problem with the scalability is partly due to the fact that as the number of animals in the genetic relationship matrix increases, the length of the vector increases quadratically. When the number of individuals grows up to $10^5$, then number of elements in the vector that we read from the binary file is about half of $10^{10}$.
+
+The length of a vector in R does not have an intrinsic limit. That means in general the length of a vector that can be created in R is limited by the amount of RAM that is available in your machine. Although we can work with very large vectors in R, some functions that operate on vectors such as `length()` or `which()` have a size limit given by `integer32` which means about $2*10^9$. 
+
+## Re-think the problem
+Although we might be sad about those limits that are imposed when working with very large vectors, it definetly gives us a chance to re-think the problem and work on a solution that has better scalability.
+
+### A first solution
+A first and possibly quick solution might be to use specialized data structures that are provided by packages such as `big.memory`. The problem with this is that `readBin()` returns a vector and we cannot escape that. Hence the route of using specialized data structures is not really a solution for our problem here.
+
+### A new approach
+The new idea consists of reading only chunks of the matrix from the binary file and do all the computations on the chunk read. This is repeated in a loop until the complete file is read.
+
+```{r GenerateData, echo=FALSE, results='hide'}
+sBinFileName <- "binaryData.bin"
+conBinFile <- file(description = sBinFileName, open = "wb")
+writeBin(c(1:45), con = conBinFile, size = 4)
+close(conBinFile)
+```
+
+### Small example
+We use a small example to explain the new idea for a solution. We assume that the vector with the matrix-elements is stored in a binary file named `binaryData.bin`. We loop over chunks of matrix and in each loop-cycle, we extract all elements of a given row of the original matrix.
+
+```{r ReadBinByChunks, results='markup'}
+sBinFileName <- "binaryData.bin"
+conBinFile <- file(description = sBinFileName, open = "rb")
+### # loop reading the chunks
+nLoopIdx <- 1
+while ( length(vecDataChunk <- readBin(con = conBinFile, what = "integer", n = nLoopIdx)) > 0 ) {
+  cat("Line: ", nLoopIdx, " : ")
+  print(vecDataChunk)
+  ### # here we can do more computations on vecDataChunk
+  ### # ...
+  ### # increment loop index
+  nLoopIdx <- nLoopIdx + 1
+}
+close(conBinFile)
+```
+
+
+## Result and Discussion
+The above simple example shows the result of our new idea. This idea can be generalized to a concept that is very valuable when working with problems involving very large data sets. Traditionally, data analysis consisted of the steps 
+
+1. Read all data into memory
+2. Do computations and store results in memory
+3. Output results to files or produce plots
+
+This approach has obvious limitations when it comes to analysing very large datasets. The traditional three-step approach should be replaced by an iterative approach that reads small chunks of data into memory and computes results on the small chunks. This type of concept is also referred to __onine algorithms__. 
+
+
+## Extensions
+The above shown idea of replacing the traditional three-step analysis approach by an online algorithm solved the memory problem. But this approach can be extented. Potential areas of extension are shown below
+
+### Parallelsation
+In the above simple example chunks of the data are processed sequentially. That means, we read one chunk and we do the computations on that chunk, then we read the next chunk and do the computations on the second chunk, until all data are processed. Due to the loop that iterates over all data chunks, computation time can be longer. But because we are running the computations on independent chunks of the data the individual computations might be run on different processors in parallel. Hence, we can start by setting up any parallelisation framework like `parallel` or `snow` or `Rmpi` then loop over the chunks of data and distribute the single computations accross the parallelisation units. The question of how to parallelize such a computation in an optimal way should be the topic of a different post.
+
+### Non-binary data
+In the small example shown above the data chunks are read from a binary input files. But, the same approach can be applied to data that are stored in simple text file. The only thing that needs to be done is to replace the `readBin()` function by the `readLines()` function.
+
 
